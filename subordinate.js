@@ -25,20 +25,20 @@ class Subordinate {
 
             switch (type) {
                 case PREPARE:
-                    if(payload == BUG_NO)
-                        this.log.write(BORT).then(() => callback(NO));
+                    if(payload.payload == BUG_NO)
+                        this.log.write(ABORT).then(() => callback(NO));
                     else
-                        payload != BUG_TIMEOUT && 
+                        payload.payload != BUG_TIMEOUT && 
                             this.log.write(PREPARE)
                                 .then(() => callback(YES));
                     break;
                 case COMMIT:
                     this.log.write(COMMIT);
-                    payload == BUG_TIMEOUT ? setTimeout(() => callback(ACK), 2000) : callback(ACK);
+                    payload.payload == BUG_TIMEOUT ? setTimeout(() => callback(ACK), 2000) : callback(ACK);
                     break;
                 case ABORT:
                     this.log.write(ABORT);
-                    payload == BUG_TIMEOUT ? setTimeout(() => callback(ACK), 2000) : callback(ACK);
+                    payload.payload == BUG_TIMEOUT ? setTimeout(() => callback(ACK), 2000) : callback(ACK);
                     break;
             }
         };

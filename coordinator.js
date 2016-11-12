@@ -78,15 +78,6 @@ class Coordinator {
     start(callback = () => ({})) {
         this._server = http.Server(this._app);
         this._socket_server = socket_server(this._server);
-        // this._subordinate_cache.init()
-        //     .then(() => this._disconnected.add(this._subordinate_cache.keys()));
-        // this._server.listen(port);
-        // this._commit_cache.init()
-        //     .then(() => this._commit_cache.forEach((id, payload) => this._commit_mediators(payload)
-        //         .then(this._commit_cache.removeItem(id))));
-        // this._abort_cache.init()
-        //     .then(() => this._abort_cache.forEach((id, payload) => this._commit_mediators(payload)
-        //         .then(this._abort_cache.removeItem(id))));
 
         this._app.get(`/`, (req, res) => {
 
@@ -100,18 +91,13 @@ class Coordinator {
             this._disconnect_check()
                 .then(() => this._prepare_mediators(transaction))
                 .then(() => this.log.write(constants.COMMIT))
-                // .then(() => this._commit_cache.setItem(transaction.id, transaction.payload))
                 .then(() => this._commit_mediators(transaction))
-                // .then(() => this._commit_cache.removeItem(transaction.id))
                 .then(() => res.send(SUCCESS_MSG))
                 .catch(DisconnectedError, () =>
                     this.log.write(constants.ABORT)
                         .then(res.send(FAIL_MSG))
                 )
                 .catch(PrepareNoVoteError, () =>
-                    // this._abort_cache.setItem(transaction.id, transaction.payload)
-                    //     .then(() => this._abort_mediators(transaction))
-                    // .then(() => this._abort_cache.removeItem(transaction.id))
                     this.log.write(constants.ABORT)
                         .then(() => this._abort_mediators(transaction))
                         .then(() => res.send(FAIL_MSG))
