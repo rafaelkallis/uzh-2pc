@@ -7,6 +7,7 @@ const socket_server = require('socket.io');
 const http = require('http');
 const uuid = require('node-uuid').v4;
 const SubordinateMediator = require('./mediator').SubordinateMediator;
+const Log = require('./log');
 // const node_persist = require('node-persist');
 
 /**
@@ -29,6 +30,7 @@ class Coordinator {
         // this._subordinate_cache = node_persist;
         this._subordinate_mediators_map = {}; // sub_id -> sub_med
         this._disconnected = new Set(); // sub_id
+        this.log = new Log("Coordinator");
 
     }
 
@@ -86,29 +88,35 @@ class Coordinator {
         //     .then(() => this._abort_cache.forEach((id, payload) => this._commit_mediators(payload)
         //         .then(this._abort_cache.removeItem(id))));
 
-        this._app.put(`/`, (req, res) => {
+        this._app.get(`/`, (req, res) => {
 
             let transaction = {
                 id: uuid(),
                 payload: 'some_payload'
             };
 
+            this.log.initTransaction(transaction.id);
+
             this._disconnect_check()
                 .then(() => this._prepare_mediators(transaction))
+                .then(() => this.log.write(constants.COMMIT))
                 // .then(() => this._commit_cache.setItem(transaction.id, transaction.payload))
                 .then(() => this._commit_mediators(transaction))
                 // .then(() => this._commit_cache.removeItem(transaction.id))
                 .then(() => res.send(SUCCESS_MSG))
-                .catch(DisconnectedError, () => {
-                    res.send(FAIL_MSG);
-                })
-                .catch(PrepareNoVoteError, () => {
+                .catch(DisconnectedError, () =>
+                    this.log.write(constants.ABORT)
+                        .then(res.send(FAIL_MSG))
+                )
+                .catch(PrepareNoVoteError, () =>
                     // this._abort_cache.setItem(transaction.id, transaction.payload)
                     //     .then(() => this._abort_mediators(transaction))
                     // .then(() => this._abort_cache.removeItem(transaction.id))
-                    this._abort_mediators(transaction)
-                        .then(() => res.send(FAIL_MSG));
-                });
+                    this.log.write(constants.ABORT)
+                        .then(() => this._abort_mediators(transaction))
+                        .then(() => res.send(FAIL_MSG))
+                )
+                .then(() => this.log.write(constants.END))
         });
 
         this._socket_server.on('connect', (subordinate_socket) => {

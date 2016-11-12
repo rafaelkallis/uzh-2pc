@@ -9,6 +9,7 @@ module.exports = {
     COMMIT: `COMMIT`,
     ABORT: `ABORT`,
     ACK: `ACK`,
+    END: `END`,
     BUG_NO: 1,
     BUG_TIMEOUT: 2,
     SUCCESS_MSG: `OK\n`,
