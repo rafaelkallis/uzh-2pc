@@ -32,13 +32,14 @@ class Log {
         let location = `logs/${this.filename}`;
 
         return fs.accessAsync(location, fs.constants.F_OK | fs.constants.R_OK)
-            .then(() => fs.readFileAsync(location))
+            .then(() => fs.readFileAsync(location, 'utf8'))
             .then(file => {
                 let lines = file
                     .replace('\r', '')
                     .split('\n');
                 
-                return lines.map(line => {
+                return lines.map(l => {
+                    let line = l.split('#');
                     return {
                         issuer: this.issuer,
                         transaction: line[2],
@@ -59,21 +60,6 @@ class Log {
 
         return fs.appendFileAsync(location, message);
     }
-
-    /*writeSync(msg, identifier) {
-        if(!this.transactionid)
-            throw new Error("No transaction initialized on logger!");
-
-        identifier = identifier ? `#${identifier}` : '';
-        
-        let location = `logs/${this.filename}`;
-        let message = `${this.issuer}#${msg}#${transactionid}${identifier}\n`;
-
-        if(!fs.existsSync('logs'))
-            fs.mkdirSync('logs');
-
-        fs.appendFileSync(location, message);
-    }*/
 }
 
 module.exports = Log;
