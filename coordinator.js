@@ -43,6 +43,9 @@ class Coordinator {
 
 
         return Promise.all(this._subordinate_mediators.map(sub_med => new Promise(resolve => (function retry() {
+            if(attempt > 0)
+                console.log(`Retrying commit on subordinator ${sub_med.subordinate_id}.`);
+                
             sub_med.commit(payload)
                 .then(resolve)
                 .catch(ACKError, (error) => setTimeout(retry, Coordinator._exponential_backoff(++attempt)));
