@@ -2,10 +2,12 @@
   "name": "uzh-2pc",
   "version": "0.0.0",
   "private": true,
-  "delay": 10000,
+  "delay": 1000,
   "scripts": {
     "start": "node debug.js",
-    "test": "node_modules/mocha/bin/_mocha"
+    "test": "node_modules/mocha/bin/_mocha",
+    "normal": "node normal_run.js",
+    "bug": "node bug_run.js"
   },
   "dependencies": {
     "bluebird": "^3.4.6",

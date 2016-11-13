@@ -30,7 +30,15 @@ class Subordinate {
                     else
                         payload.payload != BUG_TIMEOUT && 
                             this.log.write(PREPARE)
-                                .then(() => callback(YES));
+                                .then(() => callback(YES))
+                                .then(() => {
+                                    // Inject bug
+                                    if(this.should_die_after_prepare) {
+                                        this.stop();
+                                        setTimeout(() => this.start(), this.restoreTime);
+                                        this.should_die_after_prepare = false;
+                                    }
+                                });
                     break;
                 case COMMIT:
                     this.log.write(COMMIT);
@@ -43,6 +51,11 @@ class Subordinate {
             }
         };
         this._coordinator_med = new CoordinatorMediator(id, coordinator_host, message_handler);
+    }
+
+    die_after_next_prepare(restoreTime) {
+        this.should_die_after_prepare = true;
+        this.restoreTime = restoreTime; 
     }
 
     start() {

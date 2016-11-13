@@ -85,11 +85,11 @@ class SubordinateMediator {
         console.log(`Coordinator send ${JSON.stringify(message)}`);
     }
 
-    _send_request(msg, payload, expected, error) {
+    _send_request(msg, payload, expected, errorClass) {
         return new Promise((resolve, reject) => {
             this._request(msg, payload, (err, type) => {
                 if(err || type != expected)
-                    reject(new PrepareNoError(this.subordinate_id))
+                    reject(new errorClass(this.subordinate_id))
                 else
                     resolve()
             });
