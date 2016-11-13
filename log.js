@@ -58,7 +58,7 @@ class Log {
         let location = `logs/${this.filename}`;
         let message = `${this.issuer}${identifier}#${msg}#${this.transactionid}\n`;
 
-        console.log(`Writing log: ${message}`);
+        console.log(`Writing log: ${message.substr(0, message.length-1)}`);
 
         return fs.appendFileAsync(location, message);
     }

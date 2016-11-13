@@ -2,6 +2,7 @@
   "name": "uzh-2pc",
   "version": "0.0.0",
   "private": true,
+  "delay": 10000,
   "scripts": {
     "start": "node debug.js",
     "test": "node_modules/mocha/bin/_mocha"

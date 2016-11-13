@@ -14,6 +14,8 @@ const ABORT = constants.ABORT;
 const YES = constants.YES;
 const ACK = constants.ACK;
 
+const DELAY = require('./package.json').delay;
+
 /**
  * Used by Subordinate for handling requests from Coordinator
  * @param id: a unique identifier for the Subordinate
@@ -36,9 +38,12 @@ class CoordinatorMediator {
         this._coordinator_socket = socket_client(this._coordinator_host);
         this._coordinator_socket.on('connect', () => console.log(`${this._id} connected with coordinator`) || this._handshake(this._id));
         this._coordinator_socket.on('disconnect', () => console.log(`${this._id} has disconnected from coordinator`));
-        this._coordinator_socket.on('message', (message) =>
-        console.log(`${this._id} has received ${JSON.stringify(message)}`) || this._message_handler(message.type, message.payload, (result =>
-        console.log(`${this._id} send ${JSON.stringify({id: message.id, type: result})}`) || this._coordinator_socket.send({id: message.id, type: result}))));
+        this._coordinator_socket.on('message', (message) => {
+            //console.log(`${this._id} has received ${JSON.stringify(message)}`);
+            setTimeout(() => this._message_handler(message.type, message.payload, (result =>
+                console.log(`${this._id} send ${JSON.stringify({id: message.id, type: result})}`) || this._coordinator_socket.send({id: message.id, type: result})))
+            , DELAY)
+        });
     }
 
     stop() {
@@ -58,9 +63,11 @@ class SubordinateMediator {
 
     _request(type, payload, callback, timeout_interval = 1000) {
         let id = uuid();
+        timeout_interval = (DELAY ? DELAY * 2 + 100 : timeout_interval)
         let listener = (message) => {
             if (message.id == id) {
                 clearTimeout(timeout);
+                //console.log(`Coordinator has received ${JSON.stringify(message)}`);
                 this.subordinate_socket.removeListener(`message`, listener);
                 callback(null, message.type);
             }
@@ -74,18 +81,31 @@ class SubordinateMediator {
         this.subordinate_socket.on('message', listener);
         let message = {id: id, type: type, payload: payload};
         this.subordinate_socket.send(message);
+        
+        console.log(`Coordinator send ${JSON.stringify(message)}`);
+    }
+
+    _send_request(msg, payload, expected, error) {
+        return new Promise((resolve, reject) => {
+            this._request(msg, payload, (err, type) => {
+                if(err || type != expected)
+                    reject(new PrepareNoError(this.subordinate_id))
+                else
+                    resolve()
+            });
+        });
     }
 
     prepare(payload) {
-        return new Promise((resolve, reject) => this._request(PREPARE, payload, (err, type) => err || type != YES ? reject(new PrepareNoError(this.subordinate_id)) : resolve()));
+        return this._send_request(PREPARE, payload, YES, PrepareNoError);
     }
 
     commit(payload) {
-        return new Promise((resolve, reject) => this._request(COMMIT, payload, (err, type) => err || type != ACK ? reject(new ACKError(this.subordinate_id)) : resolve()));
+        return this._send_request(COMMIT, payload, ACK, ACKError);
     }
 
     abort(payload) {
-        return new Promise((resolve, reject) => this._request(ABORT, payload, (err, type) => err || type != ACK ? reject(new ACKError(this.subordinate_id)) : resolve()));
+        return this._send_request(ABORT, payload, ACK, ACKError);
     }
 }
 

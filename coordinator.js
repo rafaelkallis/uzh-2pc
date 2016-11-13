@@ -21,6 +21,8 @@ const PrepareNoVoteError = errors.PrepareNoVoteError;
 const SUCCESS_MSG = constants.SUCCESS_MSG;
 const FAIL_MSG = constants.FAIL_MSG;
 
+const DELAY = require('./package.json').delay;
+
 class Coordinator {
     constructor(port) {
         this._app = express();
@@ -35,30 +37,33 @@ class Coordinator {
     }
 
     _prepare_mediators(payload) {
-        return Promise.all(this._subordinate_mediators.map(sub_med => sub_med.prepare(payload)));
+        return Promise.delay(DELAY)
+            .then(() => Promise.all(this._subordinate_mediators.map(sub_med => sub_med.prepare(payload))));
     }
 
     _commit_mediators(payload) {
         let attempt = 0;
 
 
-        return Promise.all(this._subordinate_mediators.map(sub_med => new Promise(resolve => (function retry() {
+        return Promise.delay(DELAY)
+            .then(() => Promise.all(this._subordinate_mediators.map(sub_med => new Promise(resolve => (function retry() {
             if(attempt > 0)
                 console.log(`Retrying commit on subordinator ${sub_med.subordinate_id}.`);
                 
             sub_med.commit(payload)
                 .then(resolve)
                 .catch(ACKError, (error) => setTimeout(retry, Coordinator._exponential_backoff(++attempt)));
-        })())));
+        })()))));
     }
 
     _abort_mediators(payload) {
         let attempt = 0;
-        return Promise.all(this._subordinate_mediators.map(sub_med => new Promise(resolve => (function retry() {
+        return Promise.delay(DELAY)
+            .then(() => Promise.all(this._subordinate_mediators.map(sub_med => new Promise(resolve => (function retry() {
             sub_med.abort(payload)
                 .then(resolve)
                 .catch(ACKError, (error) => setTimeout(retry, Coordinator._exponential_backoff(++attempt)));
-        })())));
+        })()))));
     }
 
     _disconnect_check() {
